@@ -7,8 +7,8 @@
 ## 설치·사용
 
 ```bash
-PY=/home/ubuntu/miniconda3/envs/stock-dataset/bin/python
-$PY -m pip install --config-settings editable_mode=compat -e /mnt/d/workspace/side_projects/doc_reader/doc_parser   # doc_reader README 참조
+PY=python
+$PY -m pip install --config-settings editable_mode=compat -e .    # 이 폴더에서 (설치 방식은 doc_reader README)
 
 $PY -m doc_parser 보고서.pdf            # 제목·경고와 블록을 위치와 함께 출력
 $PY -m doc_parser 보고서.pdf --json     # 블록을 JSON 한 줄씩
@@ -173,7 +173,8 @@ $PY -m doc_parser 보고서.pdf --layout-url $URL --ocr-url $URL --extract-outpu
 ## 알려진 한계
 
 - Word PDF는 숫자와 한글 사이에 공백이 들어감("제12 장") → 키워드 검색 쪽에서 정규화 필요
-- 글머리표 기호가 글자 층에 없는 PDF(Chromium 인쇄 등)는 항목이 한 문단으로 합쳐짐
+- 글머리표가 글자가 아니라 그림으로 그려진 PDF(Chromium 인쇄 등)는 항목이 한 문단으로 합쳐짐
+  (`- `·`• `·`※ `처럼 글자로 쓴 글머리표는 2026-11-15부터 항목마다 나뉨 — 트랜스포머 논문 p.5 항목 3개 분리, 긴 문서 회귀 변화 없음)
 - 여러 페이지에 걸친 표는 시작 페이지 위치만 남음 (행마다 페이지 번호 없음)
 - 2단 편집 PDF의 읽기 순서는 시험하지 않음 (레이아웃 옵션도 아직 읽기 순서에는 쓰지 않음)
 - 글자층만 쓰면 그림 속 단어가 한 단어 문단·가짜 표가 되고 아래 문단까지 표로 빨려듦 → 레이아웃 옵션으로 해결

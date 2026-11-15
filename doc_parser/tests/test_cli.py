@@ -206,3 +206,24 @@ def test_pdf_tables_wraps_and_running_lines(tmp_path, capsys):
     assert tables[1]["rows"][1] == ["진동", "4.5", "월"]                # ruled grid via find_tables
     assert tables[0]["loc"]["page"] == 1 and tables[1]["loc"]["page"] == 4
     assert parse_file(src).blocks == parse_file(src).blocks             # deterministic
+
+
+def test_pdf_bullets_typed_as_text(tmp_path, capsys):
+    """Bullets typed as characters ("- ", "• ") start their own paragraphs (Korean reports use "- " a lot);
+    a wrapped line without a marker still joins its item."""
+    import pymupdf
+
+    doc = pymupdf.open()
+    p = doc.new_page()
+    p.insert_text((72, 80), "다음 분기 계획", fontsize=14, fontname="korea")
+    y = 104
+    for line in ["- 해외 인증을 11월까지 마친다.", "- 금형 2벌을 추가해 생산 능력을", "  1.5배로 늘린다.", "• 응답 시간을 1일로 줄인다."]:
+        p.insert_text((80, y), line, fontsize=10.5, fontname="korea")
+        y += 15
+    pdf = tmp_path / "plan.pdf"
+    doc.save(str(pdf))
+    assert main([str(pdf), "--json"]) == 0
+    texts = [json.loads(l)["text"] for l in capsys.readouterr().out.splitlines()]
+    items = [t for t in texts if t.lstrip().startswith(("-", "•"))]
+    assert len(items) == 3, texts
+    assert "1.5배" in items[1]                                           # wrapped line stays with its item

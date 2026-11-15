@@ -11,3 +11,5 @@
   `tests/test_reader.py`의 배정·목록 검사에 넣는다. A2A 배관은 `doc_parser.a2a`(doc_writer·meal_log도 씀 — 바꾸면 그쪽 테스트도).
 - 부품 설치는 compat 방식(`--config-settings editable_mode=compat`): 루트의 `doc_parser/` 폴더가 패키지를 가리는 문제 때문 (README).
 - 의존: doc_index → doc_chunker → doc_parser 한 방향, 부품은 doc_reader를 import하지 않는다.
+- 공개 저장소(Apache-2.0, PyMuPDF는 AGPL — `NOTICE`). README 캡처는 `tools/screenshots.py`로 **가상 자료만** 찍는다(외부·개인 문서 금지).
+  화면을 크게 바꾸면 캡처도 다시 찍는다. README·문서에 이 PC 경로를 쓰지 않는다("이 PC에서" 절만 예외).

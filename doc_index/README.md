@@ -6,8 +6,8 @@
 ## 설치·사용
 
 ```bash
-PY=/home/ubuntu/miniconda3/envs/stock-dataset/bin/python
-$PY -m pip install --no-deps --config-settings editable_mode=compat -e /mnt/d/workspace/side_projects/doc_reader/doc_index   # doc_parser·doc_chunker 먼저 (doc_reader README)
+PY=python
+$PY -m pip install --config-settings editable_mode=compat -e ../doc_parser -e ../doc_chunker -e .    # 이 폴더에서 (doc_reader README)
 
 $PY -m doc_index build 자료폴더/ --db idx.sqlite --embed-url http://<WSL IP>:8011/v1   # 없으면 키워드만
 $PY -m doc_index search "출장 일비" --db idx.sqlite --embed-url http://<WSL IP>:8011/v1 [--mode keyword|vector|hybrid] [-k 10]
@@ -22,7 +22,7 @@ hits = idx.search("하우징 금형 비용", k=20) # Hit(unit_id, path, score, t
 files_of(hits)                            # 파일 순위 (파일은 가장 좋은 단위의 순위)
 ```
 
-임베딩 서버: customer-service-agent와 같은 CPU 서버 (`~/miniconda3/envs/vllm/bin/python /mnt/d/workspace/agentic_rag/scripts/cpu_embed_server.py --port 8011`).
+임베딩 서버: OpenAI 호환 `/v1/embeddings` (Qwen3-Embedding 기준으로 측정 — vLLM 또는 CPU 서버). 작성자 PC에서는 다른 프로젝트의 CPU 임베딩 서버(:8011)를 같이 씀.
 
 ## 화면·A2A
 

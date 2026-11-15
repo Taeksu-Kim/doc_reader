@@ -1,7 +1,7 @@
 # 검색 정확도 측정 (재현)
 
 ```bash
-PY=/home/ubuntu/miniconda3/envs/stock-dataset/bin/python
+PY=python
 IP=$(hostname -I | awk '{print $1}')
 $PY tools/make_corpus.py --targets ../doc_writer/samples/nurisense --out out/corpus            # 1,968개 (seed 42)
 $PY -m doc_index build out/corpus --db out/idx.sqlite --embed-url http://$IP:8011/v1         # CPU 임베딩 약 9분

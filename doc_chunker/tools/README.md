@@ -3,7 +3,7 @@
 파서를 고친 뒤 실행. 215쪽 가상 매뉴얼(장 20 · 절 160 · 장마다 60행 표 · 500행 부록 표)로 표식·표 행·머리 행을 센다.
 
 ```bash
-PY=/home/ubuntu/miniconda3/envs/stock-dataset/bin/python
+PY=python
 mkdir -p out/longdoc
 $PY tools/make_longdoc.py out/longdoc/manual.docx
 # Word(Windows)로 PDF 두 종(책갈피 有/無) — 선택

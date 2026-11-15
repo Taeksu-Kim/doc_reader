@@ -582,6 +582,8 @@ def parse_pdf(path: Path, ocr: Optional[OcrReader] = None, layout: Optional[Layo
                 continue
             text, size = obj["text"], obj["size"]
             bullet = bool(obj.get("bullet"))
+            # a bullet typed as text ("- 항목", "• item", "※ 주의") starts its own paragraph too
+            inline_bullet = text[:1] in _BULLETS and text[1:2].isspace()
             if "toc" in obj:
                 flush()
                 blocks.append(Block("heading", loc, text=obj["toc"][1], level=obj["toc"][0], bbox=line_box(obj)))
@@ -596,7 +598,7 @@ def parse_pdf(path: Path, ocr: Optional[OcrReader] = None, layout: Optional[Layo
                 continue
             same_size = abs(prev["size"] - size) < 0.6 if prev is not None else False
             body_text = prev is not None and max(prev["size"], size) <= body * 1.1   # e.g. small "[S1]" after body
-            joins = (prev is not None and not bullet and (same_size or body_text)
+            joins = (prev is not None and not bullet and not inline_bullet and (same_size or body_text)
                      and 0 <= obj["y"] - prev["y1"] < max(size, prev["size"]) * 0.9)
             if not joins:
                 flush()

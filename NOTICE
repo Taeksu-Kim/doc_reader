@@ -1,0 +1,17 @@
+doc_reader
+Copyright 2026 Taeksu Kim
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party software this code depends on (installed separately, not included in this repository):
+
+- PyMuPDF (pymupdf) — PDF reading, rendering and table finding in doc_parser.
+  Licensed under the GNU Affero General Public License v3.0 or an Artifex commercial license.
+  https://github.com/pymupdf/PyMuPDF
+  Distributing this software together with PyMuPDF, or offering it as a network service, is subject
+  to PyMuPDF's license terms (AGPL-3.0 unless you hold a commercial license).
+- python-docx, openpyxl, python-pptx (MIT) — Office formats.
+- numpy (BSD-3-Clause) — vector search in doc_index.
+- FastAPI, Starlette, Uvicorn, python-multipart (MIT / BSD) — the server.
+- Optional model server (doc_parser/tools/ocr_server.py, separate environment): PaddleOCR / PaddlePaddle (Apache-2.0),
+  vLLM (Apache-2.0). Model weights are downloaded by those tools under their own licenses.

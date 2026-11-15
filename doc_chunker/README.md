@@ -6,9 +6,8 @@
 ## 설치·사용
 
 ```bash
-PY=/home/ubuntu/miniconda3/envs/stock-dataset/bin/python
-R=/mnt/d/workspace/side_projects/doc_reader      # 설치 방식은 doc_reader README
-$PY -m pip install --no-deps --config-settings editable_mode=compat -e $R/doc_parser -e $R/doc_chunker
+PY=python
+$PY -m pip install --config-settings editable_mode=compat -e ../doc_parser -e .    # 이 폴더에서 (doc_reader README)
 
 $PY -m doc_chunker 자료폴더/                                    # 파일별 단위 수·크기·경고·건너뜀·중복
 $PY -m doc_chunker 자료폴더/ --max-tokens 3000 --out units.jsonl --show 2
