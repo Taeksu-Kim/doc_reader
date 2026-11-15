@@ -1,6 +1,6 @@
 """브라우저 점검: 청크 미리보기 화면(serve)을 실제 Chromium(headless)에서 눌러 본다.
 
-    python tools/browser_check.py [--doc FILE] [--shots DIR]
+    python tools/check_chunk.py [--doc FILE] [--shots DIR]
 
 임시 폴더로 서버를 띄우고 끝나면 정리한다 (실제 data/는 건드리지 않음). 기본 문서는 긴 문서 회귀용 215쪽 매뉴얼
 (doc_chunker/out/longdoc/manual.docx, 없으면 tests의 시험 매뉴얼). 화면을 바꾸면 이것도 돌린다.

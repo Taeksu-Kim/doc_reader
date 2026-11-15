@@ -1,6 +1,6 @@
 """브라우저 점검: 자료실 검색 화면(serve)을 실제 Chromium(headless)에서 눌러 본다.
 
-    python tools/browser_check.py [--corpus DIR] [--shots DIR]
+    python tools/check_library.py [--corpus DIR] [--shots DIR]
 
 임시 폴더로 서버 두 개(doc_index, 원본 보기용 doc_parser)를 띄우고 끝나면 정리한다 (실제 data/는 건드리지 않음).
 임베딩 서버는 가짜(tests/test_library.FakeEmbedder) — GPU·CPU 임베딩 서버를 쓰지 않는다. 자료는 --corpus(기본 doc_index/out/corpus,

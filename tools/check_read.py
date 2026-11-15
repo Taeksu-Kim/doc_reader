@@ -1,6 +1,6 @@
 """브라우저 점검: 읽기 검수 화면(serve)을 실제 Chromium(headless)에서 눌러 본다.
 
-    python tools/browser_check.py [PDF] [--shots DIR]
+    python tools/check_read.py [PDF] [--shots DIR]
 
 임시 폴더로 서버를 직접 띄우고 끝나면 정리한다 (실제 data/는 건드리지 않음). 레이아웃·OCR 서버는
 가짜(tests/test_read.FakeModels) — GPU를 쓰지 않는다. PDF를 주면 그 파일로, 없으면 시험용 PDF로 본다.
