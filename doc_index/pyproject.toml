@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doc-index"
+version = "0.1.0"
+description = "Keyword (Korean bigram BM25) + vector index over doc_chunker units in SQLite"
+requires-python = ">=3.10"
+dependencies = ["doc-chunker", "doc-parser", "numpy"]
+
+
+[project.scripts]
+doc_index = "doc_index.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["doc_index*"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

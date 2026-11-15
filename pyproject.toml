@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doc-reader"
+version = "0.1.0"
+description = "Reading agent: one server (screens + A2A) over doc_parser, doc_chunker and doc_index"
+requires-python = ">=3.10"
+dependencies = ["doc-parser[app]", "doc-chunker", "doc-index", "fastapi", "uvicorn", "python-multipart"]
+
+[project.scripts]
+doc_reader = "doc_reader.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["doc_reader*"]
+
+[tool.setuptools.package-data]
+doc_reader = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

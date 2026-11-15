@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doc-parser"
+version = "0.1.0"
+description = "Read txt/md/docx/xlsx/pptx/pdf into heading/text/table blocks with locations"
+requires-python = ">=3.10"
+dependencies = ["python-docx", "openpyxl", "python-pptx", "pymupdf"]
+
+[project.optional-dependencies]
+app = ["fastapi"]     # doc_parser.a2a (shared A2A JSON-RPC module; screens and server live in doc_reader)
+
+[project.scripts]
+doc_parser = "doc_parser.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["doc_parser*"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

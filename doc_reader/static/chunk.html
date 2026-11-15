@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>청크 미리보기 · doc_reader</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='5' width='26' height='6' rx='2' fill='%232d5bd2'/%3E%3Crect x='3' y='13' width='18' height='6' rx='2' fill='%232d5bd2' opacity='.7'/%3E%3Crect x='3' y='21' width='22' height='6' rx='2' fill='%232d5bd2' opacity='.45'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f4f7; --panel: #ffffff; --raised: #ffffff; --sunken: #f6f7f9; --side: #eaedf2;
+    --text: #171b24; --muted: #5b6372; --faint: #8a919e; --line: #e1e4ea; --line-strong: #cfd4dc; --hover: #eef1f5;
+    --accent: #2d5bd2; --on-accent: #ffffff; --accent-soft: #e6edfc; --accent-text: #2449ad;
+    --ok: #1a7a50; --warn: #995c00; --warn-soft: #fdf1dc; --danger: #c03b3b; --danger-soft: #fbe9e9;
+    --fill-lo: #bccdf4; --fill-mid: #7092e3; --fill-hi: #2d5bd2; --over: #c9581f;
+    --shadow: 0 12px 32px rgba(20, 30, 50, .16); --r: 8px; --r-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #13161b; --panel: #1a1e25; --raised: #222730; --sunken: #161a20; --side: #101318;
+      --text: #e6e9ef; --muted: #9aa2b1; --faint: #6f7786; --line: #2b313b; --line-strong: #3a414d; --hover: #232933;
+      --accent: #8fb0ff; --on-accent: #0d1630; --accent-soft: #1d2a4a; --accent-text: #a9c2ff;
+      --ok: #4cc28c; --warn: #e2a64a; --warn-soft: #3a2c14; --danger: #ef6b6b; --danger-soft: #3a1c1c;
+      --fill-lo: #24345e; --fill-mid: #4d6dc0; --fill-hi: #8fb0ff; --over: #f08a52;
+      --shadow: 0 12px 32px rgba(0, 0, 0, .55);
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+         word-break: keep-all; overflow-wrap: anywhere; -webkit-font-smoothing: antialiased; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3, h4, p { margin: 0; }
+  button, input, select { font: inherit; color: inherit; }
+  .num { font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 13px;
+         border: 1px solid var(--line-strong); border-radius: var(--r); background: var(--panel); cursor: pointer;
+         text-decoration: none; color: var(--text); white-space: nowrap; }
+  .btn:hover { background: var(--hover); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.07); }
+  .btn.danger { color: var(--danger); }
+  .btn.small { min-height: 28px; padding: 0 10px; font-size: 12px; }
+  .btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tag { font-size: 11px; padding: 0 6px; border-radius: 4px; background: var(--sunken); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .tag.agent { background: var(--accent-soft); border-color: transparent; color: var(--accent-text); }
+  .tag.fail { background: var(--danger-soft); border-color: transparent; color: var(--danger); }
+  .tag.warn { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+
+  .top { height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 14px 0 12px; background: var(--panel);
+         border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 15px; white-space: nowrap; color: inherit; text-decoration: none; min-height: 36px; min-width: 36px; }
+  .brand .mark { display: flex; flex-direction: column; gap: 2px; width: 22px; }
+  .brand .mark i { height: 5px; border-radius: 2px; background: var(--accent); }
+  .brand .mark i:nth-child(2) { width: 70%; opacity: .7; } .brand .mark i:nth-child(3) { width: 85%; opacity: .45; }
+  .brand small { font-weight: 500; color: var(--faint); font-size: 12px; }
+  .spacer { flex: 1; }
+  #railBtn { display: none; width: 34px; padding: 0; }
+  .shell { display: grid; grid-template-columns: 264px minmax(0, 1fr); height: calc(100vh - 52px); }
+  .rail { background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  .rail-title { display: flex; justify-content: space-between; padding: 14px 16px 6px; font-size: 12px; color: var(--muted); }
+  .list { list-style: none; margin: 0; padding: 0 8px 12px; overflow-y: auto; flex: 1; }
+  .list a { display: block; padding: 9px 10px; border-radius: var(--r); color: var(--text); text-decoration: none; }
+  .list a:hover { background: var(--hover); }
+  .list a[aria-current="true"] { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .l-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .l-meta { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; margin-top: 2px; white-space: nowrap; overflow: hidden; }
+  .rail-empty { padding: 18px 16px; font-size: 13px; color: var(--muted); }
+  .rail-foot { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .rail-foot a { color: var(--muted); }
+  .scrim { display: none; }
+  main { min-width: 0; min-height: 0; overflow: auto; }
+
+  .intake { max-width: 720px; margin: 0 auto; padding: 48px 24px 64px; display: flex; flex-direction: column; gap: 20px; }
+  .intake h1 { font-size: 22px; line-height: 1.35; text-wrap: balance; }
+  .lede { color: var(--muted); margin-top: 6px; max-width: 62ch; }
+  .limit { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .limit input { width: 110px; height: 34px; border: 1px solid var(--line-strong); border-radius: var(--r); padding: 0 10px; background: var(--panel); text-align: right; }
+  .drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; min-height: 210px;
+          border: 1.5px dashed var(--line-strong); border-radius: 16px; background: var(--panel); cursor: pointer; padding: 28px; }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop svg { width: 44px; height: 44px; stroke: var(--accent); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .drop b { font-size: 16px; }
+  .err { color: var(--danger); font-size: 13px; min-height: 20px; }
+  .busy { display: flex; gap: 10px; align-items: center; color: var(--muted); }
+  .bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; width: 160px; }
+  .bar::after { content: ""; display: block; height: 100%; width: 35%; background: var(--accent); animation: slide 1.3s ease-in-out infinite; }
+  @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
+
+  .doc-head { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; padding: 16px 20px 12px;
+              background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; position: sticky; top: 0; z-index: 5; }
+  .doc-head h1 { font-size: 18px; line-height: 1.35; }
+  .doc-meta { font-size: 12px; color: var(--muted); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .doc-meta span + span::before { content: "·"; margin-right: 10px; color: var(--faint); }
+  .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .actions input { width: 96px; height: 34px; border: 1px solid var(--line-strong); border-radius: var(--r); padding: 0 8px; text-align: right; background: var(--panel); }
+  /* 시그니처: 단위 지도 — 단위마다 칸, 너비는 토큰 수, 진하기는 상한 대비 채운 정도 */
+  .map { padding: 12px 20px 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .map-row { display: flex; gap: 2px; height: 26px; align-items: stretch; }
+  .map-row button { border: 0; padding: 0; border-radius: 3px; cursor: pointer; min-width: 4px; background: var(--fill-mid); }
+  .map-row button.lo { background: var(--fill-lo); } .map-row button.hi { background: var(--fill-hi); }
+  .map-row button.over { background: var(--over); }
+  .map-row button:hover, .map-row button.cur { outline: 2px solid var(--text); outline-offset: 1px; }
+  .map-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+  .map-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .warns { margin: 12px 20px 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .warns li { font-size: 12px; color: var(--warn); background: var(--warn-soft); padding: 6px 10px; border-radius: 6px; }
+  .units { list-style: none; margin: 0; padding: 14px 20px 48px; display: flex; flex-direction: column; gap: 10px; max-width: 980px; }
+  .unit { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); scroll-margin-top: 150px; }
+  .unit.cur { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .u-head { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .u-no { font-weight: 700; color: var(--accent-text); font-size: 13px; min-width: 28px; }
+  .u-path { flex: 1; min-width: 0; font-size: 13px; }
+  .u-path b { font-weight: 600; }
+  .u-path .loc { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .meter { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .meter .track { width: 110px; height: 6px; border-radius: 3px; background: var(--sunken); border: 1px solid var(--line); overflow: hidden; }
+  .meter .fill { height: 100%; background: var(--fill-hi); }
+  .meter .fill.over { background: var(--over); }
+  .u-body { padding: 12px 16px 6px; }
+  .u-body.clamp { max-height: 260px; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+  .u-foot { display: flex; gap: 6px; padding: 6px 12px 10px; }
+  .md { line-height: 1.7; }
+  .md p { margin: 0 0 8px; max-width: 76ch; }
+  .md h4 { font-size: 14px; margin: 10px 0 4px; }
+  .md ul { margin: 0 0 8px; padding-left: 20px; }
+  .md .crumbline { font-size: 12px; color: var(--muted); padding: 6px 10px; background: var(--sunken); border-radius: 6px; margin-bottom: 10px; }
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; margin: 0 0 10px; }
+  .tbl table { border-collapse: collapse; font-size: 12.5px; width: max-content; min-width: 100%; }
+  .tbl th, .tbl td { border-bottom: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; max-width: 280px; }
+  .tbl th { background: var(--sunken); font-weight: 600; }
+  .state { max-width: 560px; margin: 64px auto; padding: 0 24px; display: flex; flex-direction: column; gap: 14px; }
+  .state .err { padding: 12px 14px; border-radius: var(--r); background: var(--danger-soft); }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+           padding: 9px 16px; border-radius: var(--r); font-size: 13px; z-index: 60; box-shadow: var(--shadow); display: none; max-width: calc(100vw - 32px); }
+  .toast.show { display: block; }
+  body.dragging::after { content: "여기에 놓으면 바로 자릅니다"; position: fixed; inset: 10px; border: 2px dashed var(--accent); border-radius: 16px;
+         background: color-mix(in srgb, var(--accent-soft) 85%, transparent); display: grid; place-items: center; font-size: 18px; font-weight: 600; color: var(--accent-text); z-index: 100; pointer-events: none; }
+
+  @media (max-width: 1000px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    #railBtn { display: inline-flex; }
+    .rail { position: fixed; top: 52px; bottom: 0; left: 0; width: min(320px, 86vw); z-index: 30; transform: translateX(-100%); transition: transform .2s; box-shadow: var(--shadow); }
+    body.rail-open .rail { transform: none; }
+    body.rail-open .scrim { display: block; position: fixed; inset: 52px 0 0 0; background: rgba(10, 14, 20, .35); z-index: 25; }
+  }
+  @media (max-width: 600px) {
+    .brand small, .brand .bt { display: none; }
+    .intake { padding: 28px 16px 48px; }
+    .doc-head, .map { padding-left: 14px; padding-right: 14px; position: static; }
+    .units { padding: 12px 12px 40px; }
+    .warns { margin: 10px 14px 0; }
+    .meter .track { width: 70px; }
+  }
+
+  /* ---- doc_reader 공통: 상단 바·영역 이동 (세 화면 같은 모양) ---- */
+  .top .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; white-space: nowrap; color: inherit;
+                text-decoration: none; min-height: 36px; min-width: 36px; }
+  .top .brand .logo { width: 24px; height: 24px; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linejoin: round; flex: none; }
+  .areas { display: flex; gap: 2px; margin-left: 6px; min-width: 0; }
+  .areas a { white-space: nowrap; padding: 0 11px; border-radius: var(--r); text-decoration: none; color: var(--muted); font-weight: 600;
+             font-size: 13px; min-height: 32px; display: inline-flex; align-items: center; }
+  .areas a:hover { background: var(--hover); color: var(--text); }
+  .areas a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-text); }
+  .areas .s { display: none; }
+  @media (max-width: 860px) { .top .brand .bt { display: none; } .areas a { padding: 0 8px; } }
+  @media (max-width: 760px) { .areas { margin-left: 0; } .areas .l { display: none; } .areas .s { display: inline; } .top .hide-s { display: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="btn" id="railBtn" aria-label="미리본 문서 목록 열기"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="/library/#/search" aria-label="doc_reader 처음으로"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5C5.8 4.2 8.9 4.2 12 6c3.1-1.8 6.2-1.8 9-.5V19c-2.8-1.3-5.9-1.3-9 .5-3.1-1.8-6.2-1.8-9-.5z"/><path d="M12 6v13.5"/></svg><span class="bt">doc_reader</span></a>
+  <nav class="areas" aria-label="화면"><a href="/library/#/search" id="navSearch"><span class="l">자료실 검색</span><span class="s">검색</span></a><a href="/library/#/library" id="navLib"><span class="l">자료 관리</span><span class="s">자료</span></a><a href="/read/" id="navRead"><span class="l">읽기 검수</span><span class="s">읽기</span></a><a href="/chunk/" id="navChunk" aria-current="page"><span class="l">청크 미리보기</span><span class="s">청크</span></a></nav>
+  <span class="spacer"></span>
+  <a class="btn primary" href="#/new" aria-label="새 문서 자르기"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="hide-s">새 문서</span></a>
+</header>
+<div class="shell">
+  <aside class="rail" id="rail" aria-label="미리본 문서">
+    <div class="rail-title"><span>미리본 문서</span><span id="cnt" class="num"></span></div>
+    <ul class="list" id="list"></ul>
+    <div class="rail-foot"><p>다른 에이전트가 <a href="/.well-known/agent-card.json" target="_blank" rel="noopener">A2A</a>로 자르게 한 문서도 여기에 쌓입니다.</p></div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" tabindex="-1"></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="file" class="vh" tabindex="-1" aria-hidden="true">
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const fmt = n => Number(n || 0).toLocaleString("ko-KR");
+const S = { list: [], cur: null, p: null, status: null, limit: 3000 };
+try { S.limit = +localStorage.getItem("dc.limit") || 3000; } catch (e) {}
+async function api(path, init) {
+  const r = await fetch(path, init);
+  if (!r.ok) { let m = `요청 실패 (${r.status})`; try { const j = await r.json(); if (typeof j.detail === "string") m = j.detail; } catch (e) {} throw new Error(m); }
+  return r.json();
+}
+function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 3200); }
+function ago(ts) { const s = Date.now() / 1000 - ts; if (s < 60) return "방금"; if (s < 3600) return `${Math.floor(s / 60)}분 전`; if (s < 86400) return `${Math.floor(s / 3600)}시간 전`;
+  const d = new Date(ts * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+
+async function loadList() {
+  try { S.list = await api("api/previews"); } catch (e) { return; }
+  $("#cnt").textContent = S.list.length ? `${S.list.length}개` : "";
+  $("#list").innerHTML = S.list.length ? S.list.map(p => `<li><a href="#/p/${p.id}" ${p.id === S.cur ? 'aria-current="true"' : ""}>
+      <span class="l-name" title="${esc(p.name)}">${esc(p.name)}</span>
+      <span class="l-meta">${p.source === "a2a" ? `<span class="tag agent">에이전트</span>` : ""}${p.state === "failed" ? `<span class="tag fail">실패</span>` :
+        `<span class="num">단위 ${p.units}</span><span class="num">상한 ${fmt(p.max_tokens)}</span>`}<span>· ${ago(p.created)}</span></span></a></li>`).join("")
+    : `<li class="rail-empty">아직 미리본 문서가 없습니다.</li>`;
+}
+
+function renderIntake(err) {
+  S.cur = null; loadList();
+  const fmts = (S.status?.formats || ["docx", "md", "pdf", "pptx", "txt", "xlsx"]).filter(f => f !== "markdown").join(" · ").toUpperCase();
+  $("#main").innerHTML = `<section class="intake">
+    <div><h1>문서가 검색 단위로 어떻게 잘리는지 미리 보세요</h1>
+      <p class="lede">장·절·표 구조를 따라 자르고, 단위마다 ‘파일 · 문서 › 장 › 절 · 쪽’ 머리와 문서 정보(시행일·버전)를 붙입니다. 큰 표는 행 단위로 자르고 머리 행을 반복합니다.</p></div>
+    <div class="limit"><label for="limitIn">단위 상한</label><input id="limitIn" class="num" type="number" min="200" max="32000" step="100" value="${S.limit}"><span class="muted">토큰 (한국어 기준 추정, 기본 3,000)</span></div>
+    <div class="drop" id="drop" role="button" tabindex="0">
+      <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></svg>
+      <b>파일을 끌어다 놓거나 눌러서 고르세요</b><span class="muted">${esc(fmts)} · 고르면 바로 자릅니다</span></div>
+    <div class="err" id="err" role="alert">${esc(err || "")}</div></section>`;
+  $("#limitIn").addEventListener("change", e => { S.limit = +e.target.value || 3000; try { localStorage.setItem("dc.limit", S.limit); } catch (x) {} });
+  const d = $("#drop");
+  d.addEventListener("click", () => $("#file").click());
+  d.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#file").click(); } });
+}
+async function upload(file) {
+  if (!file) return;
+  const fd = new FormData(); fd.append("file", file); fd.append("max_tokens", String(S.limit));
+  const err = $("#err"); if (err) err.textContent = "";
+  const drop = $("#drop"); if (drop) drop.innerHTML = `<div class="busy"><div class="bar"></div>${esc(file.name)} 읽고 자르는 중…</div>`;
+  try {
+    const r = await api("api/previews", {method: "POST", body: fd});
+    if (r.reused) toast("같은 파일을 같은 상한으로 자른 결과가 있어 그것을 엽니다");
+    location.hash = `#/p/${r.preview.id}`;
+  } catch (e) { renderIntake(e.message); }
+}
+
+function md(text) {
+  const lines = text.split("\n"), out = []; const crumbs = [];
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.startsWith("> ")) { crumbs.push(l.slice(2)); continue; }
+    if (l.startsWith("|")) {
+      const rows = []; while (i < lines.length && lines[i].startsWith("|")) { rows.push(lines[i]); i++; } i--;
+      const cells = r => r.replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+      const body = rows.filter(r => !/^\|[\s:-]*(\|[\s:-]*)+\|?$/.test(r)); if (!body.length) continue;
+      out.push(`<div class="tbl"><table><thead><tr>${cells(body[0]).map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${body.slice(1).map(r => `<tr>${cells(r).map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`);
+      continue;
+    }
+    if (/^#{1,6}\s/.test(l)) { out.push(`<h4>${esc(l.replace(/^#+\s*/, ""))}</h4>`); continue; }
+    if (/^[-*]\s/.test(l)) { out.push(`<ul><li>${esc(l.slice(2))}</li></ul>`); continue; }
+    if (l.trim()) out.push(`<p>${esc(l)}</p>`);
+  }
+  return (crumbs.length ? `<div class="crumbline">${esc(crumbs.join(" · "))}</div>` : "") + out.join("").replace(/<\/ul><ul>/g, "");
+}
+function label(u) {
+  if (u.heading_path && u.heading_path.length) return u.heading_path.join(" › ");
+  const hs = u.text.split("\n").filter(l => /^#{1,6}\s/.test(l)).map(l => l.replace(/^#+\s*/, ""));
+  if (!hs.length) return "(문서 첫머리)";
+  return hs.length === 1 ? hs[0] : `${hs[0]} 외 ${hs.length - 1}개 절`;
+}
+const level = (t, max) => t > max ? "over" : t > max * 0.75 ? "hi" : t < max * 0.25 ? "lo" : "";
+const locOf = u => u.loc_start ? (u.loc_end && u.loc_end !== u.loc_start ? `${u.loc_start}–${u.loc_end.replace(/^p\./, "")}` : u.loc_start) : "";
+
+async function openPreview(id) {
+  S.cur = id; loadList();
+  let p;
+  try { p = await api(`api/previews/${id}`); }
+  catch (e) { $("#main").innerHTML = `<div class="state"><h2>미리보기를 찾을 수 없습니다</h2><p class="muted">지워졌거나 주소가 잘못됐습니다.</p><a class="btn" href="#/new">새 문서</a></div>`; return; }
+  if (S.cur !== id) return;
+  S.p = p;
+  const head = `<div class="doc-head"><div style="min-width:0"><h1>${esc(p.title || p.name)}</h1>
+      <div class="doc-meta"><span>${esc(p.name)}</span><span class="num">블록 ${fmt(p.blocks)}</span><span class="num">자르는 데 ${(p.ms / 1000).toFixed(1)}초</span><span>${p.source === "a2a" ? "에이전트가 보냄 · " : ""}${ago(p.created)}</span></div></div>
+      <div class="actions"><label class="vh" for="reLimit">새 상한</label><input id="reLimit" class="num" type="number" min="200" max="32000" step="100" value="${p.max_tokens}">
+        <button class="btn" id="reBtn">이 상한으로 다시 자르기</button>
+        ${p.state === "done" ? `<a class="btn primary" href="api/previews/${p.id}/units.jsonl" download>JSONL 내려받기</a>` : ""}
+        <button class="btn danger" id="delBtn">지우기</button></div></div>`;
+  if (p.state === "failed") {
+    $("#main").innerHTML = head + `<div class="state"><h2>이 문서를 자르지 못했습니다</h2><div class="err">${esc(p.error)}</div>
+      <p class="muted" style="font-size:13px">스캔본이나 글자를 도형으로 그린 PDF는 doc_parser의 OCR 옵션으로 먼저 읽어야 합니다.</p></div>`;
+  } else {
+    const U = p.units_list, max = p.max_tokens, total = U.reduce((a, u) => a + u.tokens, 0) || 1;
+    const over = U.filter(u => u.tokens > max).length, parts = U.filter(u => u.part).length;
+    $("#main").innerHTML = head + `<div class="map">
+        <div class="doc-meta" style="margin:0 0 8px"><span class="num"><b>단위 ${U.length}개</b></span><span class="num">상한 ${fmt(max)} 토큰</span><span class="num">가장 큰 단위 ${fmt(p.largest)}</span><span class="num">합계 ${fmt(p.tokens)}</span>${parts ? `<span class="num">나눠진 절 조각 ${parts}개</span>` : ""}${over ? `<span class="tag warn">상한 넘음 ${over}개</span>` : ""}</div>
+        <div class="map-row" id="map" aria-label="단위 지도: 칸 너비는 토큰 수, 진할수록 상한에 가까움">${U.map((u, i) => `<button class="${level(u.tokens, max)}" style="flex:${Math.max(u.tokens, total / 400)}" data-i="${i}" title="#${i + 1} ${esc(label(u))} · ${fmt(u.tokens)} 토큰" aria-label="단위 ${i + 1}"></button>`).join("")}</div>
+        <div class="map-legend"><span><i style="background:var(--fill-lo)"></i>상한의 25% 미만</span><span><i style="background:var(--fill-mid)"></i>25~75%</span><span><i style="background:var(--fill-hi)"></i>75% 이상</span>${over ? `<span><i style="background:var(--over)"></i>상한 넘음 (행 하나가 큰 표 등)</span>` : ""}</div></div>
+      ${p.warnings.length ? `<ul class="warns">${p.warnings.map(w => `<li>⚠ ${esc(w)}</li>`).join("")}</ul>` : ""}
+      <ol class="units" id="units">${U.map((u, i) => {
+        const pct = Math.min(100, Math.round(u.tokens / max * 100)), long = u.text.length > 1400;
+        return `<li class="unit" id="u${i}" data-i="${i}"><div class="u-head"><span class="u-no num">#${i + 1}</span>
+          <div class="u-path"><b>${esc(label(u))}</b><span class="loc">${esc(locOf(u))}</span>${u.part ? ` <span class="tag">부분 ${esc(u.part)}</span>` : ""}</div>
+          <div class="meter" title="상한 대비 ${pct}%"><div class="track"><div class="fill ${u.tokens > max ? "over" : ""}" style="width:${pct}%"></div></div><span class="num">${fmt(u.tokens)} / ${fmt(max)}</span></div></div>
+          <div class="u-body md ${long ? "clamp" : ""}">${md(u.text)}</div>
+          <div class="u-foot">${long ? `<button class="btn small" data-more="${i}">전체 보기</button>` : ""}<button class="btn small" data-copy="${i}">본문 복사</button></div></li>`;
+      }).join("")}</ol>`;
+    $("#map").addEventListener("click", e => { const b = e.target.closest("button"); if (b) focusUnit(+b.dataset.i); });
+    $("#units").addEventListener("click", async e => {
+      const m = e.target.closest("[data-more]"); if (m) { const body = m.closest(".unit").querySelector(".u-body"); const open = body.classList.toggle("clamp"); m.textContent = open ? "전체 보기" : "접기"; return; }
+      const c = e.target.closest("[data-copy]"); if (c) { try { await navigator.clipboard.writeText(U[+c.dataset.copy].text); toast("단위 본문을 복사했습니다"); } catch (x) { toast("복사하지 못했습니다"); } }
+    });
+  }
+  $("#reBtn").addEventListener("click", async () => {
+    const fd = new FormData(); fd.append("max_tokens", $("#reLimit").value);
+    try { const r = await api(`api/previews/${p.id}/rechunk`, {method: "POST", body: fd}); toast(`상한 ${fmt(r.max_tokens)}으로 다시 잘랐습니다. 이전 결과도 목록에 남아 있습니다`); location.hash = `#/p/${r.id}`; }
+    catch (e) { toast(e.message); }
+  });
+  $("#reLimit").addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); $("#reBtn").click(); } });
+  const del = $("#delBtn");
+  del.addEventListener("click", async () => {
+    if (!del.dataset.armed) { del.dataset.armed = "1"; del.textContent = "한 번 더 누르면 지움"; return; }
+    try { await api(`api/previews/${p.id}`, {method: "DELETE"}); toast(`‘${p.name}’ 미리보기를 지웠습니다`); location.hash = "#/new"; } catch (e) { toast(e.message); }
+  });
+}
+function focusUnit(i) {
+  document.querySelectorAll(".cur").forEach(x => x.classList.remove("cur"));
+  $(`#u${i}`)?.classList.add("cur"); $(`#map [data-i="${i}"]`)?.classList.add("cur");
+  $(`#u${i}`)?.scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+function route() {
+  document.body.classList.remove("rail-open");
+  const m = /^#\/p\/([\w-]+)/.exec(location.hash);
+  if (m) openPreview(m[1]); else renderIntake();
+}
+window.addEventListener("hashchange", route);
+$("#railBtn").addEventListener("click", () => document.body.classList.toggle("rail-open"));
+$("#scrim").addEventListener("click", () => document.body.classList.remove("rail-open"));
+$("#file").addEventListener("change", e => { upload(e.target.files[0]); e.target.value = ""; });
+let depth = 0; const hasFiles = e => [...(e.dataTransfer?.types || [])].includes("Files");
+window.addEventListener("dragenter", e => { if (!hasFiles(e)) return; e.preventDefault(); depth++; document.body.classList.add("dragging"); });
+window.addEventListener("dragover", e => { if (hasFiles(e)) e.preventDefault(); });
+window.addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; document.body.classList.remove("dragging"); } });
+window.addEventListener("drop", e => { if (!hasFiles(e)) return; e.preventDefault(); depth = 0; document.body.classList.remove("dragging"); const f = e.dataTransfer.files[0]; if (!location.hash.startsWith("#/new")) location.hash = "#/new"; setTimeout(() => upload(f), 0); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("rail-open"); });
+(async function start() {
+  try { S.status = await api("api/status"); if (!localStorage.getItem("dc.limit")) S.limit = S.status.default_max_tokens; } catch (e) {}
+  if (!location.hash) location.hash = "#/new"; else route();
+  setInterval(() => { if (!document.hidden) loadList(); }, 5000);
+})();
+</script>
+</body>
+</html>

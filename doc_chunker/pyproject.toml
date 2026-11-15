@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doc-chunker"
+version = "0.1.0"
+description = "Structure-based chunking of doc_parser documents for search / RAG"
+requires-python = ">=3.10"
+dependencies = ["doc-parser"]
+
+
+[project.scripts]
+doc_chunker = "doc_chunker.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["doc_chunker*"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
